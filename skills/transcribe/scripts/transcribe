@@ -7,6 +7,8 @@
 # --speakers N   tells the speaker model exactly how many people are talking (more accurate)
 # --language xx  the spoken language, e.g. en; the default, auto, detects it
 source "${0:A:h}/common.sh"
+# Use the downloaded models; don't contact Hugging Face while transcribing
+export HF_HUB_OFFLINE=1
 set -e
 
 speakers=(); lang=auto

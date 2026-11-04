@@ -9,6 +9,9 @@ MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-
 VOICES="$TRANSCRIBE_HOME/voiceprints"
 SCRIPTS="${0:A:h}"
 
+# pyannote sends usage metrics to otel.pyannote.ai by default. Turn that off.
+export PYANNOTE_METRICS_ENABLED=false
+
 # Homebrew's folders aren't always on PATH when Claude Code runs a command
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 

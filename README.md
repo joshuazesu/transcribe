@@ -93,7 +93,9 @@ The plugin's scripts are in `skills/transcribe/scripts/`:
 
 After setup, nothing goes over the network. The recording is converted, transcribed and split by speaker on your Mac. The transcript is written next to the recording, and Claude reads it from there to write the summary. That summary is made by Claude, like anything else you ask it, so the transcript's text goes to Claude as part of your conversation. The audio and your voiceprint don't.
 
-Setup downloads from Homebrew, Hugging Face and the Python package index. The Hugging Face login is only needed to download the speaker-ID model.
+Setup downloads from Homebrew, Hugging Face and the Python package index. The Hugging Face login is only needed to download the speaker-ID model. The setup check also contacts Hugging Face to confirm your access to that model.
+
+pyannote normally sends anonymous usage metrics (audio length, number of speakers, its version) to `otel.pyannote.ai`. The plugin turns that off (`PYANNOTE_METRICS_ENABLED=false`). It also loads the models in offline mode while transcribing and enrolling (`HF_HUB_OFFLINE=1`), so Hugging Face isn't contacted then either.
 
 ## Uninstall
 

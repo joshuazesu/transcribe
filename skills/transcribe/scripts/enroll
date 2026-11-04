@@ -4,6 +4,8 @@
 # (30 seconds at least, 60 is better). Transcripts then label that voice with the name.
 # Enrolling the same name again replaces the old voiceprint.
 source "${0:A:h}/common.sh"
+# Use the downloaded models; don't contact Hugging Face while transcribing
+export HF_HUB_OFFLINE=1
 set -e
 
 if [[ $# -lt 2 ]]; then
