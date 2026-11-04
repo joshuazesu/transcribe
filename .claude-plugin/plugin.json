@@ -8,6 +8,7 @@
   },
   "homepage": "https://github.com/joshuazesu/transcribe",
   "repository": "https://github.com/joshuazesu/transcribe",
+  "privacyPolicyUrl": "https://github.com/joshuazesu/transcribe#privacy",
   "license": "MIT",
   "keywords": ["transcription", "whisper", "speaker-diarization", "meetings", "macos"]
 }
