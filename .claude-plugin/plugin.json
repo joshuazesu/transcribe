@@ -1,0 +1,13 @@
+{
+  "name": "transcribe",
+  "displayName": "Transcribe",
+  "version": "0.1.0",
+  "description": "Transcribe recordings on your Mac with a speaker name on every line, then have Claude summarise them. Whisper and pyannote run locally; nothing is uploaded.",
+  "author": {
+    "name": "Joshua Su"
+  },
+  "homepage": "https://github.com/joshuazesu/transcribe",
+  "repository": "https://github.com/joshuazesu/transcribe",
+  "license": "MIT",
+  "keywords": ["transcription", "whisper", "speaker-diarization", "meetings", "macos"]
+}

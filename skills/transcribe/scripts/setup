@@ -1,0 +1,101 @@
+#!/bin/zsh
+# First-time setup for transcribe.
+#
+#   setup check     Show which setup steps are done. Exits 0 only when everything is ready.
+#                   The last line is READY, or NEXT: <step> naming what to do next.
+#   setup install   Install the tools (Homebrew packages, the Whisper model and the
+#                   speaker-ID Python environment). Safe to run again: it skips what's done.
+source "${0:A:h}/common.sh"
+
+cmd="${1:-check}"
+
+mark() { [[ "$1" == ok ]] && print -r -- "[x] $2" || print -r -- "[ ] $2"; }
+
+check() {
+  local next="" st
+
+  if command -v brew >/dev/null; then st=ok; else st=no; next=${next:-homebrew}; fi
+  mark $st "Homebrew (https://brew.sh)"
+
+  local tools_ok=ok
+  for t in ffmpeg whisper-cli uv; do command -v $t >/dev/null || tools_ok=no; done
+  [[ $tools_ok == ok ]] || next=${next:-install}
+  mark $tools_ok "Tools: ffmpeg, whisper-cpp, uv"
+
+  if [[ -s "$MODEL" ]] && (( $(stat -L -f %z "$MODEL") > 1500000000 )); then st=ok; else st=no; next=${next:-install}; fi
+  mark $st "Whisper model (large-v3-turbo, about 1.6 GB)"
+
+  if [[ -x "$PY" ]] && "$PY" -c "import pyannote.audio" 2>/dev/null; then st=ok; else st=no; next=${next:-install}; fi
+  mark $st "Speaker-ID Python environment"
+
+  local hf=no
+  if [[ $st == ok ]]; then
+    local out; out="$("$PY" "$SCRIPTS/diarize.py" check 2>/dev/null | tail -1)"
+    case "$out" in
+      ok) hf=ok ;;
+      no-token*) next=${next:-hf-login} ;;
+      *) next=${next:-hf-access} ;;
+    esac
+  fi
+  mark $hf "Hugging Face access to pyannote/speaker-diarization-community-1"
+
+  local prints=("$VOICES"/*.npy(N))
+  if (( ${#prints} )); then
+    st=ok; local names=(${${prints:t:r}})
+    mark ok "Voiceprint enrolled (${(j:, :)names})"
+  else
+    mark no "Voiceprint enrolled"; next=${next:-enroll}
+  fi
+
+  print -r -- "Data folder: $TRANSCRIBE_HOME"
+  if [[ -z "$next" ]]; then print READY; return 0; fi
+  print -r -- "NEXT: $next"
+  return 1
+}
+
+install() {
+  if ! command -v brew >/dev/null; then
+    print -u2 "Homebrew isn't installed. Install it from https://brew.sh in a Terminal window, then run setup again."
+    return 1
+  fi
+  if [[ "$(uname -m)" != arm64 ]]; then
+    print -u2 "Note: transcribe is built for Apple Silicon Macs. It may work on Intel, but slowly."
+  fi
+
+  local missing=()
+  command -v ffmpeg >/dev/null || missing+=ffmpeg
+  command -v whisper-cli >/dev/null || missing+=whisper-cpp
+  command -v uv >/dev/null || missing+=uv
+  if (( ${#missing} )); then
+    print "==> Installing ${missing[*]} with Homebrew"
+    brew install "${missing[@]}" || return 1
+  else
+    print "==> ffmpeg, whisper-cpp and uv are already installed"
+  fi
+
+  mkdir -p "${MODEL:h}" "$VOICES"
+  if [[ -s "$MODEL" ]] && (( $(stat -L -f %z "$MODEL") > 1500000000 )); then
+    print "==> Whisper model already downloaded"
+  else
+    print "==> Downloading the Whisper model (about 1.6 GB)"
+    curl -fsSL --retry 3 -C - -o "$MODEL.part" "$MODEL_URL" || return 1
+    mv "$MODEL.part" "$MODEL"
+  fi
+
+  if [[ -x "$PY" ]] && "$PY" -c "import pyannote.audio" 2>/dev/null; then
+    print "==> Speaker-ID Python environment already set up"
+  else
+    print "==> Setting up the speaker-ID Python environment (downloads about 1 GB)"
+    uv venv --quiet --python 3.12 "$VENV" || return 1
+    uv pip install --quiet --python "$PY" "pyannote.audio==4.0.7" || return 1
+  fi
+  print "==> Install finished"
+  check
+  return 0
+}
+
+case "$cmd" in
+  check) check ;;
+  install) install ;;
+  *) print -u2 "Usage: setup [check|install]"; exit 2 ;;
+esac

@@ -1,0 +1,6 @@
+{
+  "name": "transcribe",
+  "owner": { "name": "Joshua Su" },
+  "description": "Transcribe: local recording transcripts with speaker names, summarised by Claude.",
+  "plugins": [{ "name": "transcribe", "source": "./" }]
+}

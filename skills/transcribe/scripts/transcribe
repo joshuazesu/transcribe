@@ -1,0 +1,51 @@
+#!/bin/zsh
+# Usage: transcribe [--speakers N] [--language CODE] <recording> [more recordings...]
+# Writes next to each recording:
+#   <recording>.txt           plain transcript
+#   <recording>.srt           timestamped subtitles
+#   <recording>.speakers.txt  transcript with a speaker name on every line
+# --speakers N   tells the speaker model exactly how many people are talking (more accurate)
+# --language xx  the spoken language, e.g. en; the default, auto, detects it
+source "${0:A:h}/common.sh"
+set -e
+
+speakers=(); lang=auto
+while [[ "$1" == --* ]]; do
+  case "$1" in
+    --speakers) speakers=(--speakers "$2"); shift 2 ;;
+    --language) lang="$2"; shift 2 ;;
+    *) print -u2 "Unknown option $1"; exit 1 ;;
+  esac
+done
+if [[ $# -eq 0 ]]; then
+  print -u2 "Usage: transcribe [--speakers N] [--language CODE] <audio-or-video-file> [...]"
+  exit 1
+fi
+[[ -s "$MODEL" ]] || { print -u2 "Setup isn't finished: run setup install first."; exit 1; }
+
+voiceprints=("$VOICES"/*.npy(N))
+# With timestamps on, Whisper sometimes drops capitals and punctuation. A short punctuated
+# prompt sets the style. It's English, so it's only used for English or auto-detected audio.
+style=()
+[[ "$lang" == auto || "$lang" == en ]] && style=(--prompt "Hi, thanks for joining. Let's get started.")
+
+for input in "$@"; do
+  if [[ ! -f "$input" ]]; then
+    print -u2 "Not found: $input"
+    continue
+  fi
+  base="${input%.*}"
+  wav="$(mktemp -t transcribe).wav"
+  print "==> Converting $input"
+  to_wav "$input" "$wav"
+  print "==> Transcribing (a 1-hour recording takes a few minutes)"
+  whisper-cli -m "$MODEL" -f "$wav" -l "$lang" "${style[@]}" -otxt -osrt -ojf -of "$base" --print-progress 2>&1 \
+    | grep -E "progress|error" || true
+  if [[ -x "$PY" ]]; then
+    print "==> Identifying speakers"
+    "$PY" "$SCRIPTS/diarize.py" label "$wav" "$base.json" "$base.speakers.txt" \
+      "${voiceprints[@]}" "${speakers[@]}" 2>&1 | grep -vE "Warning|warn\(" || true
+  fi
+  rm -f "$wav" "$base.json"
+  print "==> Done: $base.txt, $base.srt$([[ -f "$base.speakers.txt" ]] && print -n ", $base.speakers.txt")"
+done
