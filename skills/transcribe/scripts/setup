@@ -30,7 +30,10 @@ check() {
 
   local hf=no
   if [[ $st == ok ]]; then
-    local out; out="$("$PY" "$SCRIPTS/diarize.py" check 2>/dev/null | tail -1)"
+    # Try the downloaded model first, so the check passes offline once setup is done.
+    # Only if it isn't downloaded yet, go online to check access and download it.
+    local out; out="$(HF_HUB_OFFLINE=1 "$PY" "$SCRIPTS/diarize.py" check 2>/dev/null | tail -1)"
+    [[ "$out" == ok ]] || out="$("$PY" "$SCRIPTS/diarize.py" check 2>/dev/null | tail -1)"
     case "$out" in
       ok) hf=ok ;;
       no-token*) next=${next:-hf-login} ;;

@@ -93,9 +93,21 @@ The plugin's scripts are in `skills/transcribe/scripts/`:
 
 After setup, nothing goes over the network. The recording is converted, transcribed and split by speaker on your Mac. The transcript is written next to the recording, and Claude reads it from there to write the summary. That summary is made by Claude, like anything else you ask it, so the transcript's text goes to Claude as part of your conversation. The audio and your voiceprint don't.
 
-Setup downloads from Homebrew, Hugging Face and the Python package index. The Hugging Face login is only needed to download the speaker-ID model. The setup check also contacts Hugging Face to confirm your access to that model.
+Only setup needs the internet. It downloads from Homebrew, Hugging Face and the Python package index. The Hugging Face login is only needed to download the speaker-ID model. Once the model is downloaded, the setup check uses the copy on your Mac and doesn't go online.
 
-pyannote normally sends anonymous usage metrics (audio length, number of speakers, its version) to `otel.pyannote.ai`. The plugin turns that off (`PYANNOTE_METRICS_ENABLED=false`). It also loads the models in offline mode while transcribing and enrolling (`HF_HUB_OFFLINE=1`), so Hugging Face isn't contacted then either.
+pyannote normally sends anonymous usage metrics (audio length, number of speakers, its version) to `otel.pyannote.ai`. The plugin turns that off (`PYANNOTE_METRICS_ENABLED=false`). It also loads the models in offline mode (`HF_HUB_OFFLINE=1`), so Hugging Face isn't contacted while transcribing or enrolling either.
+
+### Check it yourself
+
+After setup, turn off Wi-Fi and transcribe a recording in the Terminal app:
+
+```sh
+"$(ls -d ~/.claude/plugins/cache/transcribe/transcribe/*/skills/transcribe/scripts/transcribe | sort -V | tail -1)" ~/Desktop/my-recording.m4a
+```
+
+Change `~/Desktop/my-recording.m4a` to your recording. The first part finds the newest installed version of the plugin.
+
+It works the same without a connection, because nothing it does needs one. (Claude itself needs the internet, so turn Wi-Fi back on before asking for the summary.) To watch every connection your Mac makes, a firewall app such as [LuLu](https://objective-see.org/products/lulu.html) or Little Snitch shows them as they happen.
 
 ## Uninstall
 
